@@ -3,231 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Miko3 OAuth Callback</title>
+    <title>Jarvis Authentication</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-            background-color: #f5f5f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell sans-serif;
             margin: 0;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
         }
+        
         .container {
-            max-width: 400px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
         }
-        .success { color: #4CAF50; font-weight: bold; }
-        .error { color: #f44336; font-weight: bold; }
-        .instruction { 
-            background: #e3f2fd; 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin: 15px 0;
-            border-left: 4px solid #2196F3;
-        }
-        .code-display {
-            background: #f5f5f5;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 12px;
-            word-break: break-all;
-            margin: 10px 0;
-        }
-        .step {
-            background: #fff3e0;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 5px;
-            font-size: 14px;
-            text-align: left;
-        }
-        .redirect-button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 20px 40px;
-            border: none;
-            border-radius: 5px;
-            font-size: 18px;
-            cursor: pointer;
-            margin: 15px;
+        
+        .logo {
+            font-size: 48px;
             font-weight: bold;
+            color: #667eea;
+            margin-bottom: 20px;
         }
-        .close-button {
-            background-color: #ff9800;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
+        
+        .status {
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .success {
+            color: #10b981;
+        }
+        
+        .error {
+            color: #ef4444;
+        }
+        
+        .message {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .redirect-info {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
             font-size: 14px;
-            cursor: pointer;
-            margin: 5px;
         }
-        .persistent-note {
-            background: #ffebee;
-            border: 1px solid #f44336;
-            border-radius: 5px;
-            padding: 10px;
-            margin: 15px 0;
-            font-size: 12px;
+        
+        .close-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        
+        .close-button:hover {
+            background: #5a67d8;
+        }
+        
+        .manual-close {
+            background: #6b7280;
+        }
+        
+        .manual-close:hover {
+            background: #4b5563;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>🤖 Miko3 Authentication</h2>
-        <div id="status">Processing authentication...</div>
+        <div class="logo">🤖 Jarvis</div>
         
-        <div id="success-section" style="display: none;">
-            <div class="instruction">
-                <span class="success">✅ Authentication Successful!</span><br>
-                Your Miko3 robot now has access to Google Calendar & Tasks
-            </div>
-            
-            <div class="step">
-                <strong>📱 STEP 1:</strong> Click this button to return to your robot:
-                <br><br>
-                <button id="redirect-button" class="redirect-button">🤖 Return to Miko3 Robot</button>
-            </div>
-            
-            <div class="step">
-                <strong>🔧 STEP 2 (If button doesn't work):</strong><br>
-                1. <strong>Keep this page open</strong> - don't close the browser yet!<br>
-                2. Go back to your Miko3 robot<br>
-                3. The authentication should complete automatically<br>
-                4. Then you can close this browser
-            </div>
-            
-            <div class="persistent-note">
-                <strong>⚠️ Important:</strong> This page will stay open for 10 minutes to ensure your robot receives the authentication. You can close it after your robot confirms successful authentication.
-            </div>
-            
-            <div id="attempts-log" style="margin-top: 20px; font-size: 12px; color: #666;"></div>
-            
-            <button id="close-browser" class="close-button">Close Browser (only after robot confirms)</button>
-        </div>
-        
-        <div id="error-section" style="display: none;">
-            <div class="instruction">
-                <span class="error">❌ Authentication Failed</span><br>
-                <div id="error-details"></div>
-            </div>
-            <button id="close-browser-error" class="close-button">Close Browser & Try Again</button>
+        <div id="content">
+            <div class="status">Processing Authentication...</div>
+            <div class="spinner"></div>
+            <div class="message">Please wait while we complete your authentication.</div>
         </div>
     </div>
 
     <script>
-        console.log('OAuth callback page loaded');
-        console.log('Current URL:', window.location.href);
-        
+        // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const authCode = urlParams.get('code');
         const error = urlParams.get('error');
+        const state = urlParams.get('state');
         
-        let attemptCount = 0;
-        let maxAttempts = 20; // Try for 10 minutes (every 30 seconds)
-        
-        function logAttempt(message) {
-            const log = document.getElementById('attempts-log');
-            const timestamp = new Date().toLocaleTimeString();
-            log.innerHTML += `${timestamp}: ${message}<br>`;
-            console.log(message);
+        function updateContent(status, message, isError = false, showSpinner = false) {
+            const content = document.getElementById('content');
+            const statusClass = isError ? 'error' : 'success';
+            const spinnerHtml = showSpinner ? '<div class="spinner"></div>' : '';
+            
+            content.innerHTML = `
+                <div class="status ${statusClass}">${status}</div>
+                ${spinnerHtml}
+                <div class="message">${message}</div>
+            `;
         }
         
-        function redirectToApp(appUrl, isAutomatic = false) {
-            attemptCount++;
-            const attemptType = isAutomatic ? 'Automatic' : 'Manual';
-            logAttempt(`${attemptType} redirect attempt #${attemptCount}`);
-            
-            console.log('Redirecting to app:', appUrl);
-            
-            // Create multiple redirect attempts
-            window.location.href = appUrl;
-            
-            // Backup methods
-            setTimeout(() => {
-                const link = document.createElement('a');
-                link.href = appUrl;
-                link.click();
-                logAttempt('Backup link click method attempted');
-            }, 500);
-            
-            // Schedule next automatic attempt if this was automatic and we haven't exceeded max attempts
-            if (isAutomatic && attemptCount < maxAttempts) {
-                setTimeout(() => {
-                    logAttempt(`Scheduling next automatic attempt in 30 seconds...`);
-                    setTimeout(() => redirectToApp(appUrl, true), 30000);
-                }, 1000);
-            }
-        }
-        
-        function attemptBrowserClose() {
-            console.log('Attempting to close browser...');
-            logAttempt('User requested browser close');
+        function attemptAppRedirect() {
+            // Try to redirect back to the Jarvis app
+            const appScheme = `com.homagerobotics.miko3homage://oauth?code=${authCode}&state=${state}`;
             
             try {
-                window.close();
-                if (window.parent && window.parent !== window) {
-                    window.parent.close();
-                }
+                window.location.href = appScheme;
+                console.log('Attempted app redirect:', appScheme);
                 
-                setTimeout(() => window.location.href = 'about:blank', 1000);
-                setTimeout(() => window.location.href = 'via://close', 1500);
+                // Give the app a moment to handle the redirect
+                setTimeout(() => {
+                    updateContent(
+                        'Authentication Complete!', 
+                        'Redirecting to Homage Robotics website...', 
+                        false, 
+                        true
+                    );
+                    
+                    // Redirect to homagerobotics.com after 3 seconds
+                    setTimeout(() => {
+                        window.location.href = 'https://homagerobotics.com';
+                    }, 3000);
+                }, 2000);
                 
-            } catch (e) {
-                console.log('Browser close failed:', e);
-                logAttempt('Browser close failed: ' + e.message);
+            } catch (err) {
+                console.error('App redirect failed:', err);
+                fallbackToWebsite();
             }
         }
         
-        if (authCode) {
-            console.log('Auth code received:', authCode.substring(0, 10) + '...');
-            logAttempt('OAuth authorization code received successfully');
+        function fallbackToWebsite() {
+            updateContent(
+                'Authentication Complete!', 
+                'Redirecting to Homage Robotics website...', 
+                false, 
+                true
+            );
             
-            // Show success section
-            document.getElementById('success-section').style.display = 'block';
-            document.getElementById('status').style.display = 'none';
-            
-            const appUrl = `com.homagerobotics.miko3homage://oauth?code=${encodeURIComponent(authCode)}`;
-            
-            // Manual redirect button
-            document.getElementById('redirect-button').onclick = function() {
-                console.log('Manual redirect clicked');
-                redirectToApp(appUrl, false);
-            };
-            
-            // Manual close button
-            document.getElementById('close-browser').onclick = function() {
-                console.log('Manual close clicked');
-                attemptBrowserClose();
-            };
-            
-            // Start automatic attempts after 5 seconds, then every 30 seconds
             setTimeout(() => {
-                logAttempt('Starting automatic redirect attempts...');
-                redirectToApp(appUrl, true);
-            }, 5000);
-            
-        } else if (error) {
-            console.log('OAuth error:', error);
-            
-            document.getElementById('error-section').style.display = 'block';
-            document.getElementById('status').style.display = 'none';
-            document.getElementById('error-details').textContent = error;
-            
-            document.getElementById('close-browser-error').onclick = function() {
-                attemptBrowserClose();
-            };
-            
-        } else {
-            console.log('No auth code or error');
-            document.getElementById('status').innerHTML = '⚠️ <span class="error">No authentication data received</span>';
-            setTimeout(attemptBrowserClose, 3000);
+                window.location.href = 'https://homagerobotics.com';
+            }, 3000);
         }
+        
+        function handleError(errorType, errorDescription) {
+            let message = 'Authentication failed. ';
+            
+            switch(errorType) {
+                case 'access_denied':
+                    message += 'You denied access to your Google account.';
+                    break;
+                case 'invalid_request':
+                    message += 'Invalid authentication request.';
+                    break;
+                default:
+                    message += errorDescription || 'An unknown error occurred.';
+            }
+            
+            message += '<br><br>You can close this browser tab and try again in the Jarvis app.';
+            
+            updateContent('Authentication Failed', message, true);
+            
+            // Still redirect to homagerobotics.com after 10 seconds even on error
+            setTimeout(() => {
+                updateContent(
+                    'Redirecting...', 
+                    'Taking you to Homage Robotics website...', 
+                    false, 
+                    true
+                );
+                setTimeout(() => {
+                    window.location.href = 'https://homagerobotics.com';
+                }, 2000);
+            }, 10000);
+        }
+        
+        // Process the OAuth response
+        if (error) {
+            handleError(error, urlParams.get('error_description'));
+        } else if (authCode) {
+            updateContent(
+                'Authentication Successful!', 
+                'Returning to Jarvis app...', 
+                false, 
+                false
+            );
+            
+            // Attempt to redirect to app immediately
+            setTimeout(attemptAppRedirect, 1000);
+        } else {
+            handleError('invalid_request', 'No authorization code received.');
+        }
+        
+        // Fallback: if we're still here after 15 seconds, redirect to website
+        setTimeout(() => {
+            if (window.location.hostname === 'shaulgaloz.github.io') {
+                fallbackToWebsite();
+            }
+        }, 15000);
     </script>
 </body>
 </html>
