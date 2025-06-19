@@ -29,32 +29,51 @@
             margin: 15px 0;
             border-left: 4px solid #2196F3;
         }
+        .code-display {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin: 10px 0;
+        }
         .step {
             background: #fff3e0;
-            padding: 10px;
+            padding: 15px;
             margin: 10px 0;
             border-radius: 5px;
             font-size: 14px;
+            text-align: left;
         }
         .redirect-button {
             background-color: #4CAF50;
             color: white;
-            padding: 15px 30px;
+            padding: 20px 40px;
             border: none;
             border-radius: 5px;
-            font-size: 16px;
+            font-size: 18px;
             cursor: pointer;
-            margin: 10px;
+            margin: 15px;
+            font-weight: bold;
         }
         .close-button {
             background-color: #ff9800;
             color: white;
-            padding: 12px 25px;
+            padding: 10px 20px;
             border: none;
             border-radius: 5px;
             font-size: 14px;
             cursor: pointer;
             margin: 5px;
+        }
+        .persistent-note {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 15px 0;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -65,24 +84,36 @@
         
         <div id="success-section" style="display: none;">
             <div class="instruction">
-                <strong>✅ Authentication successful!</strong><br>
-                Now return to your Miko3 robot:
+                <span class="success">✅ Authentication Successful!</span><br>
+                Your Miko3 robot now has access to Google Calendar & Tasks
             </div>
-            
-            <button id="redirect-button" class="redirect-button">📱 Return to Miko3 Robot</button>
             
             <div class="step">
-                <strong>If the button doesn't work:</strong><br>
-                1. <button id="close-browser" class="close-button">Close This Browser</button><br>
-                2. Return to your Miko3 robot manually
+                <strong>📱 STEP 1:</strong> Click this button to return to your robot:
+                <br><br>
+                <button id="redirect-button" class="redirect-button">🤖 Return to Miko3 Robot</button>
             </div>
             
-            <div id="countdown" style="margin-top: 15px; color: #666; font-size: 12px;"></div>
+            <div class="step">
+                <strong>🔧 STEP 2 (If button doesn't work):</strong><br>
+                1. <strong>Keep this page open</strong> - don't close the browser yet!<br>
+                2. Go back to your Miko3 robot<br>
+                3. The authentication should complete automatically<br>
+                4. Then you can close this browser
+            </div>
+            
+            <div class="persistent-note">
+                <strong>⚠️ Important:</strong> This page will stay open for 10 minutes to ensure your robot receives the authentication. You can close it after your robot confirms successful authentication.
+            </div>
+            
+            <div id="attempts-log" style="margin-top: 20px; font-size: 12px; color: #666;"></div>
+            
+            <button id="close-browser" class="close-button">Close Browser (only after robot confirms)</button>
         </div>
         
         <div id="error-section" style="display: none;">
             <div class="instruction">
-                <span class="error">❌ Authentication failed</span><br>
+                <span class="error">❌ Authentication Failed</span><br>
                 <div id="error-details"></div>
             </div>
             <button id="close-browser-error" class="close-button">Close Browser & Try Again</button>
@@ -97,29 +128,24 @@
         const authCode = urlParams.get('code');
         const error = urlParams.get('error');
         
-        let countdownTimer;
-        let secondsLeft = 5;
+        let attemptCount = 0;
+        let maxAttempts = 20; // Try for 10 minutes (every 30 seconds)
         
-        function updateCountdown() {
-            const countdownEl = document.getElementById('countdown');
-            if (secondsLeft > 0) {
-                countdownEl.textContent = `Auto-redirecting in ${secondsLeft} seconds...`;
-                secondsLeft--;
-                countdownTimer = setTimeout(updateCountdown, 1000);
-            } else {
-                countdownEl.textContent = 'Redirecting now...';
-            }
+        function logAttempt(message) {
+            const log = document.getElementById('attempts-log');
+            const timestamp = new Date().toLocaleTimeString();
+            log.innerHTML += `${timestamp}: ${message}<br>`;
+            console.log(message);
         }
         
-        function redirectToApp(appUrl) {
+        function redirectToApp(appUrl, isAutomatic = false) {
+            attemptCount++;
+            const attemptType = isAutomatic ? 'Automatic' : 'Manual';
+            logAttempt(`${attemptType} redirect attempt #${attemptCount}`);
+            
             console.log('Redirecting to app:', appUrl);
             
-            // Clear any countdown
-            if (countdownTimer) {
-                clearTimeout(countdownTimer);
-            }
-            
-            // Multiple redirect methods
+            // Create multiple redirect attempts
             window.location.href = appUrl;
             
             // Backup methods
@@ -127,38 +153,40 @@
                 const link = document.createElement('a');
                 link.href = appUrl;
                 link.click();
+                logAttempt('Backup link click method attempted');
             }, 500);
             
-            // Try to close browser
-            setTimeout(() => {
-                attemptBrowserClose();
-            }, 1000);
+            // Schedule next automatic attempt if this was automatic and we haven't exceeded max attempts
+            if (isAutomatic && attemptCount < maxAttempts) {
+                setTimeout(() => {
+                    logAttempt(`Scheduling next automatic attempt in 30 seconds...`);
+                    setTimeout(() => redirectToApp(appUrl, true), 30000);
+                }, 1000);
+            }
         }
         
         function attemptBrowserClose() {
             console.log('Attempting to close browser...');
+            logAttempt('User requested browser close');
             
-            // Multiple close methods
             try {
                 window.close();
                 if (window.parent && window.parent !== window) {
                     window.parent.close();
                 }
                 
-                // Navigate to about:blank as fallback
                 setTimeout(() => window.location.href = 'about:blank', 1000);
-                
-                // Browser-specific close attempts
                 setTimeout(() => window.location.href = 'via://close', 1500);
-                setTimeout(() => window.location.href = 'intent://close#Intent;scheme=android;action=android.intent.action.MAIN;category=android.intent.category.HOME;end', 2000);
                 
             } catch (e) {
                 console.log('Browser close failed:', e);
+                logAttempt('Browser close failed: ' + e.message);
             }
         }
         
         if (authCode) {
             console.log('Auth code received:', authCode.substring(0, 10) + '...');
+            logAttempt('OAuth authorization code received successfully');
             
             // Show success section
             document.getElementById('success-section').style.display = 'block';
@@ -169,7 +197,7 @@
             // Manual redirect button
             document.getElementById('redirect-button').onclick = function() {
                 console.log('Manual redirect clicked');
-                redirectToApp(appUrl);
+                redirectToApp(appUrl, false);
             };
             
             // Manual close button
@@ -178,11 +206,10 @@
                 attemptBrowserClose();
             };
             
-            // Start countdown and auto-redirect
-            updateCountdown();
+            // Start automatic attempts after 5 seconds, then every 30 seconds
             setTimeout(() => {
-                console.log('Auto-redirect triggered');
-                redirectToApp(appUrl);
+                logAttempt('Starting automatic redirect attempts...');
+                redirectToApp(appUrl, true);
             }, 5000);
             
         } else if (error) {
