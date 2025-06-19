@@ -29,40 +29,116 @@
             cursor: pointer;
             margin-top: 20px;
         }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Miko3 Authentication</h2>
+        <h2>🤖 Miko3 Authentication</h2>
         <div id="status">Processing authentication...</div>
         <div id="redirect-section" style="display: none;">
-            <button id="redirect-button" class="redirect-button">Return to Miko3 App</button>
+            <button id="redirect-button" class="redirect-button">📱 Return to Miko3 App</button>
+            <p style="font-size: 12px; color: #666; margin-top: 15px;">
+                <strong>Browser will close automatically</strong><br>
+                If it doesn't close, you can close it manually
+            </p>
         </div>
     </div>
 
     <script>
+        console.log('OAuth callback page loaded');
+        console.log('Current URL:', window.location.href);
+        
         const urlParams = new URLSearchParams(window.location.search);
         const authCode = urlParams.get('code');
         const error = urlParams.get('error');
         
+        console.log('Auth code:', authCode ? authCode.substring(0, 10) + '...' : 'none');
+        console.log('Error:', error || 'none');
+        
+        function attemptBrowserClose() {
+            console.log('Attempting to close browser...');
+            
+            // Multiple methods to close the browser/tab
+            try {
+                // Method 1: Standard window.close()
+                window.close();
+                
+                // Method 2: Try to close parent if in iframe
+                if (window.parent && window.parent !== window) {
+                    window.parent.close();
+                }
+                
+                // Method 3: Navigate to about:blank
+                setTimeout(() => {
+                    window.location.href = 'about:blank';
+                }, 1000);
+                
+                // Method 4: Via browser specific close intent
+                setTimeout(() => {
+                    window.location.href = 'via://close';
+                }, 1500);
+                
+                // Method 5: Android browser close intent
+                setTimeout(() => {
+                    window.location.href = 'intent://close#Intent;scheme=android;action=android.intent.action.MAIN;category=android.intent.category.HOME;end';
+                }, 2000);
+                
+            } catch (e) {
+                console.log('Browser close attempt failed:', e);
+            }
+        }
+        
+        function redirectToApp(appUrl) {
+            console.log('Redirecting to app:', appUrl);
+            
+            // Create multiple redirect attempts
+            window.location.href = appUrl;
+            
+            // Backup redirect methods
+            setTimeout(() => {
+                const link = document.createElement('a');
+                link.href = appUrl;
+                link.click();
+            }, 500);
+            
+            // Try to close browser after redirect
+            setTimeout(attemptBrowserClose, 1000);
+        }
+        
         if (authCode) {
-            document.getElementById('status').innerHTML = '✅ Authentication successful!';
+            document.getElementById('status').innerHTML = '✅ <span class="success">Authentication successful!</span><br><small>Redirecting to Miko3...</small>';
             const section = document.getElementById('redirect-section');
             section.style.display = 'block';
             
             const appUrl = `com.homagerobotics.miko3homage://oauth?code=${encodeURIComponent(authCode)}`;
+            console.log('App redirect URL:', appUrl);
             
+            // Manual button
             document.getElementById('redirect-button').onclick = function() {
-                window.location.href = appUrl;
+                console.log('Manual redirect button clicked');
+                redirectToApp(appUrl);
             };
             
             // Auto-redirect after 2 seconds
             setTimeout(() => {
-                window.location.href = appUrl;
+                console.log('Auto-redirect triggered');
+                redirectToApp(appUrl);
             }, 2000);
             
         } else if (error) {
-            document.getElementById('status').innerHTML = '❌ Authentication failed: ' + error;
+            document.getElementById('status').innerHTML = '❌ <span class="error">Authentication failed: ' + error + '</span>';
+            console.log('OAuth error received:', error);
+            
+            // Still try to close browser on error
+            setTimeout(attemptBrowserClose, 3000);
+            
+        } else {
+            document.getElementById('status').innerHTML = '⚠️ <span class="error">No authentication data received</span>';
+            console.log('No auth code or error in URL');
+            
+            setTimeout(attemptBrowserClose, 3000);
         }
     </script>
 </body>
